@@ -1,0 +1,185 @@
+---
+title: "Advent of Code 2020"
+author: "Stephanie M Haas"
+date: "12/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+#Day 1
+
+##Part 1
+```{r}
+day1 <- read_csv("data/day1.csv")
+
+
+total <- 2020
+high_values <- day1 %>% filter(expense > total/2 & expense != iter)
+low_values <- day1 %>% filter(expense < total/2 & expense != iter)
+pair <- high_values %>% 
+  mutate(search_value = total - expense) %>% 
+    inner_join(low_values, by = c("search_value" = "expense"))
+pair[1,1] * pair[1,2]
+```
+
+##Part 2
+
+```{r}
+
+first_value <- day1 %>% filter(expense <= 2020/2)
+
+list <- lapply(first_value$expense, function(iter){
+  total <- 2020 - iter
+  high_values <- day1 %>% filter(expense > total/2 & expense != iter)
+  low_values <- day1 %>% filter(expense < total/2 & expense != iter)
+  pair <- high_values %>% 
+      mutate(search_value = (expense - total) * -1) %>% 
+      inner_join(low_values, by = c("search_value" = "expense"))
+  return(iter * pair[1,1] * pair[1,2])
+})
+
+
+
+k = NA
+i = 1
+while(k = NA){
+  iter <- first_value$expense[i]
+  total <- 2020 - iter
+  high_values <- day1 %>% filter(expense > total/2 & expense != iter)
+  low_values <- day1 %>% filter(expense < total/2 & expense != iter)
+  pair <- high_values %>% 
+    mutate(search_value = total - expense) %>% 
+    inner_join(low_values, by = c("search_value" = "expense"))
+  k = iter * pair[1,1] * pair[1,2]
+  i = i + 1
+}
+k
+
+```
+
+#Day 2
+
+##Part 1
+
+```{r}
+day2 <- read_csv("data/day2.csv")
+
+day2_split <- sapply(day2$value, strsplit, split = ": | |-")
+day2_split <- do.call("rbind", day2_split)
+
+colnames(day2_split) <- c("min", "max", "letter", "password")
+
+day2_split <- as_tibble(day2_split) %>% 
+  mutate(valid = NA,
+         min = as.numeric(min),
+         max = as.numeric(max)) %>% 
+  rowid_to_column()
+
+errors <- lapply(day2_split$rowid, function(row){
+  code <- str_extract_all(day2_split$password[row], "[a-z]")
+  code <- do.call("rbind", code)
+  iter <- length(code[code == day2_split$letter[row]])
+  if (iter >= day2_split$min[row] & iter <= day2_split$max[row]){
+
+    return(1)
+
+  }else{
+
+    return(0)
+
+  }
+})
+
+do.call("sum", errors)
+
+```
+
+
+##Part 2
+
+```{r}
+
+errors <- lapply(day2_split$rowid, function(row){
+  code <- str_extract_all(day2_split$password[row], "[a-z]")
+  code <- do.call("rbind", code)
+  first <- code[day2_split$min[row]]
+  second <- code[day2_split$max[row]]
+  if (xor(first == day2_split$letter[row], second == day2_split$letter[row])){
+    
+    return(1)
+    
+  }else{
+    
+    return(0)
+    
+  }
+})
+
+do.call("sum", errors)
+
+
+```
+
+
+#Day 3
+
+##Part 1
+
+```{r}
+day3 <- read_csv("data/day3.csv", col_names = "hill")
+
+day3 <- day3 %>% 
+  mutate(hill = gsub("\\.", 0, hill),
+         hill = gsub("#", 1, hill))
+
+day3_split <- sapply(day3$hill, str_extract_all, "\\d")
+day3_split <- do.call("rbind", day3_split) %>% 
+  as_tibble()
+
+
+max <- dim(day3_split)[1]
+
+tree_num <- lapply(1:max, function(row){
+  column <- ((row - 1) * 3 + 1) %% 31
+  if (column == 0) {column = 31}
+  return(as.numeric(day3_split[row, column]))
+})
+
+do.call("sum", tree_num)
+
+```
+
+##Part 2
+
+```{r}
+max <- dim(day3_split)[1]
+right <- c(seq(1,7,by = 2), 1)
+down <- c(1,1,1,1,2)
+
+
+slope_sum <- function(row, down, right){
+   row_adjust <- (row - 1) * down + 1
+    column <- ((row - 1) * right + 1) %% 31
+    if (column == 0) {column = 31}
+    return(as.numeric(day3_split[row_adjust, column]))
+}
+
+nums <- mapply(function(down, right){
+  tree_num <- lapply(1:ceiling(max/down), slope_sum, down = down, right = right) 
+  return(do.call("sum", tree_num))
+}, down, right)
+
+prod(nums)
+
+
+```
+
+#Day 4
