@@ -89,7 +89,7 @@ https://adventofcode.com/2020/day/2
 
 ## Part 1
 
-For day 2 we had a set up passwords with criteria dictating the minimum and maximum number of times a stated letter had to appear in the code. We had to find how many passwords were valid (i.e. followed their criteria).
+For day 2 we had a set of passwords with criteria dictating the minimum and maximum number of times a stated letter had to appear in the code. We had to find how many passwords were valid (i.e. followed their criteria).
 
 ```{r}
 day2 <- read_csv("data/day2.csv")
@@ -291,5 +291,96 @@ num_valid <- lapply(present, function(iter){
   }
 })
 solution_day4_p2 <- do.call("sum", num_valid)
+```
+
+
+# Day 5
+
+## Part 1
+For day 5, given a list of binary partitioned seats find the highest seat id. The first 7 characters gave the row (0 -127) where B's represented in the top half and F's in the bottom half. The last three characters gave the seat column (0 - 7) where R's were the top half and L's the bottom half. Seat id was calculated as row * 44 + seat.
+
+
+```{r}
+day5 <- read_csv("data/day5.txt", col_names = F)
+
+day5 <- day5 %>% 
+  separate(X1, 
+           into = c("row", "seat"),
+           sep = 7) %>% 
+  rowid_to_column()
+row_high <- day5[order(day5$row, -rank(day5$seat)),][[2]][1]
+seat_high <- day5[order(day5$row, -rank(day5$seat)),][[3]][1]
+
+row_high <- str_extract_all(row_high, boundary("character")) %>% 
+  unlist()
+
+seat_high <- str_extract_all(seat_high, boundary("character")) %>% 
+  unlist()
+  
+
+
+row_number <- function(row){
+  low <- 0
+  high <- 127
+  range <- 127
+  for (i in 1:7){
+    if (row[i] == "B"){
+      low <- high - floor(range/2)
+      high <- high
+      } else{
+        low <- low
+        high <- low + floor(range/2)
+        }
+    range <- high - low
+  }
+  return(high)
+}
+
+row_number(row_high)
+
+seat_number <- function(seat){
+  low <- 0
+  high <- 7
+  range <- 7
+  for(i in 1:3){
+    if(seat[i] == "R"){
+      low <- high - floor(range/2)
+      high <- high
+    } else{
+      low <- low
+      high <- low + floor(range/2)
+    }
+    range <- high - low
+  }
+  return(high)
+}
+
+solution_day5_p1 <- row_number(row_high)*8 + seat_number(seat_high)
+
+```
+
+
+## Part 2
+For the second part we had to find the one missing seat. We only knew that the seat id -1 and +1 both existed.
+
+```{r}
+
+seat_ids <- lapply(day5$rowid, function(iter){
+  row <- str_extract_all(day5$row[iter], boundary("character")) %>%  unlist()
+  seat <- str_extract_all(day5$seat[iter], boundary("character")) %>%  unlist()
+  return(c(day5$rowid[iter], row_number(row)*8 + seat_number(seat)))
+})
+
+seat_ids <- do.call("rbind", seat_ids) %>% 
+  as_tibble()
+colnames(seat_ids) <- c("rowid", "seat")
+
+all_seats <- tibble(seat = min(seat_ids$seat):max(seat_ids$seat))
+
+solution_day5_p2 <- left_join(all_seats, seat_ids) %>% 
+  filter(is.na(rowid)) %>% 
+  select(seat)
+
+
 ```
 
