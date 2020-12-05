@@ -183,3 +183,73 @@ prod(nums)
 ```
 
 #Day 4
+
+##Part 1
+
+```{r}
+day4 <- read_file("data/day4.txt")
+
+
+day4 <- day4 %>% str_extract_all(regex(r'{(^.+$(\r\n)?)+}', multiline = TRUE))
+day4 <- day4[[1]]
+  
+
+passport = 1:length(day4)
+
+day4_codes_list <- lapply(passport, function(iter){
+    strsplit(day4[iter], ":|\r\n| ") %>% 
+    unlist() %>% 
+    matrix(ncol = 2, byrow = T) %>% 
+    as_tibble() %>% 
+    mutate(id = iter)
+})
+
+day4_codes <- do.call("rbind", day4_codes_list) %>% 
+  pivot_wider(id_cols = id,
+              names_from = V1,
+              values_from = V2)
+
+day4_valid <- day4_codes %>% 
+  select(-cid) %>% 
+  na.omit()
+
+dim(day4_valid)
+
+```
+
+```{r}
+day4_valid_2 <- day4_valid %>% 
+  separate(hgt, into = c("hgt", "units"), sep = "(?<=[0-9])(?=[a-z])") %>% 
+  na.omit() %>% 
+  mutate(
+    byr = as.numeric(byr),
+    iyr = as.numeric(iyr),
+    eyr = as.numeric(eyr),
+    hgt = as.numeric(hgt)
+  )
+
+present <- 1:dim(day4_valid_2)[1]
+num_valid <- lapply(present, function(iter){
+  byr <- day4_valid_2$byr[iter] >= 1920 & day4_valid_2$byr[iter] <= 2002
+  iyr <- day4_valid_2$iyr[iter] >= 2010 & day4_valid_2$iyr[iter] <= 2020
+  eyr <- day4_valid_2$eyr[iter] >= 2020 & day4_valid_2$eyr[iter] <= 2030
+  if(day4_valid_2$units[iter] == "cm"){
+    hgt <- day4_valid_2$hgt[iter] >= 150 & day4_valid_2$hgt[iter] <= 193
+  } else{if (day4_valid_2$units[iter] == "in"){
+    hgt <- day4_valid_2$hgt[iter] >= 59 & day4_valid_2$hgt[iter] <= 76
+  } else{
+    hgt <- FALSE
+  }
+  }
+  hcl <- grepl("#[0-9A-Fa-f]", day4_valid_2$hcl[iter])
+  ecl <- day4_valid_2$ecl[iter] %in% c("amb", "blu", "brn", "gry", "grn", "hzl", "oth")
+  pid <- grepl("^[0-9]{9}$", day4_valid_2$pid[iter])
+  if (byr & iyr & eyr & hgt & hcl & ecl & pid){
+    return (1)
+  } else {
+    return(0)
+  }
+})
+do.call("sum", num_valid)
+```
+
