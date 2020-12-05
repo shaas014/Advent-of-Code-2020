@@ -2,35 +2,53 @@
 title: "Advent of Code 2020"
 author: "Stephanie M Haas"
 date: "12/3/2020"
-output: html_document
+output: 
+  html_document:
+    theme: yeti
+    toc: true
+    toc_depth: 3
+    toc_float: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+
+Here are my solutions for advent of code 2020. Advent of code is a set of 25 coding problems released daily that gain progressively harder throughout the month of December. They can be completed in any coding language; however, I am exclusively using R.
+
+Full descriptions of the problems and the data is available at https://adventofcode.com/2020
+
+
 
 ```{r}
 library(tidyverse)
 ```
 
 
-#Day 1
+# Day 1
 
-##Part 1
+https://adventofcode.com/2020/day/1
+
+
+
+## Part 1
+
+For day 1, part 1 we had a list of numbers and we had to find the two numbers that summed to 2020.
+
 ```{r}
 day1 <- read_csv("data/day1.csv")
-
+head(day1)
 
 total <- 2020
-high_values <- day1 %>% filter(expense > total/2 & expense != iter)
-low_values <- day1 %>% filter(expense < total/2 & expense != iter)
+high_values <- day1 %>% filter(expense > total/2 & expense != total)
+low_values <- day1 %>% filter(expense < total/2 & expense != total)
 pair <- high_values %>% 
   mutate(search_value = total - expense) %>% 
     inner_join(low_values, by = c("search_value" = "expense"))
-pair[1,1] * pair[1,2]
+solution_day1_p1 <- pair[1,1] * pair[1,2]
 ```
 
-##Part 2
+## Part 2
+
+For part 2 we had to find which 3 numbers summed to 2020
+
 
 ```{r}
 
@@ -38,39 +56,44 @@ first_value <- day1 %>% filter(expense <= 2020/2)
 
 list <- lapply(first_value$expense, function(iter){
   total <- 2020 - iter
-  high_values <- day1 %>% filter(expense > total/2 & expense != iter)
-  low_values <- day1 %>% filter(expense < total/2 & expense != iter)
+  high_values <- day1 %>% filter(expense > total/2 & expense != total)
+  low_values <- day1 %>% filter(expense < total/2 & expense != total)
   pair <- high_values %>% 
       mutate(search_value = (expense - total) * -1) %>% 
       inner_join(low_values, by = c("search_value" = "expense"))
   return(iter * pair[1,1] * pair[1,2])
 })
 
+solution_day1_p2 <- unique(list)[1]
 
-
-k = NA
-i = 1
-while(k = NA){
+k <- NA
+i <- 1
+while(is.na(k)){
   iter <- first_value$expense[i]
   total <- 2020 - iter
-  high_values <- day1 %>% filter(expense > total/2 & expense != iter)
-  low_values <- day1 %>% filter(expense < total/2 & expense != iter)
+  high_values <- day1 %>% filter(expense > total/2 & expense != total)
+  low_values <- day1 %>% filter(expense < total/2 & expense != total)
   pair <- high_values %>% 
     mutate(search_value = total - expense) %>% 
     inner_join(low_values, by = c("search_value" = "expense"))
   k = iter * pair[1,1] * pair[1,2]
   i = i + 1
 }
-k
+solution_day1_p2 <- k
 
 ```
 
-#Day 2
+# Day 2
 
-##Part 1
+https://adventofcode.com/2020/day/2
+
+## Part 1
+
+For day 2 we had a set up passwords with criteria dictating the minimum and maximum number of times a stated letter had to appear in the code. We had to find how many passwords were valid (i.e. followed their criteria).
 
 ```{r}
 day2 <- read_csv("data/day2.csv")
+head(day2)
 
 day2_split <- sapply(day2$value, strsplit, split = ": | |-")
 day2_split <- do.call("rbind", day2_split)
@@ -98,12 +121,15 @@ errors <- lapply(day2_split$rowid, function(row){
   }
 })
 
-do.call("sum", errors)
+solution_day2_p1 <- do.call("sum", errors)
 
 ```
 
 
-##Part 2
+## Part 2
+
+Part 2 was the same as part 1 except instead of min and max we had the specific digit in the code. So each letter had to appear at exactly one of the two given indices.
+
 
 ```{r}
 
@@ -123,18 +149,23 @@ errors <- lapply(day2_split$rowid, function(row){
   }
 })
 
-do.call("sum", errors)
+solution_day2_p2 <- do.call("sum", errors)
 
 
 ```
 
 
-#Day 3
+# Day 3
 
-##Part 1
+https://adventofcode.com/2020/day/3
+
+## Part 1
+
+In Day 3 we had a matrix composed of "." and "#" and given a line that started at the top left corner and progressing down 1 and to the right 3 we had to determine how many #'s intersected with the line. The matrix duplicated itself to the right infinitely until it reached the bottom.
 
 ```{r}
 day3 <- read_csv("data/day3.csv", col_names = "hill")
+head(day3)
 
 day3 <- day3 %>% 
   mutate(hill = gsub("\\.", 0, hill),
@@ -153,11 +184,13 @@ tree_num <- lapply(1:max, function(row){
   return(as.numeric(day3_split[row, column]))
 })
 
-do.call("sum", tree_num)
+solution_day3_p1 <- do.call("sum", tree_num)
 
 ```
 
-##Part 2
+## Part 2
+
+Part 2 extended part 1 except we were to find the product of the number of #'s intersected for several lines including down 1 and right 1, down 1 and right 3, down 1 and right 5, down 1 and right 7, and down 2 and right 1.
 
 ```{r}
 max <- dim(day3_split)[1]
@@ -177,14 +210,17 @@ nums <- mapply(function(down, right){
   return(do.call("sum", tree_num))
 }, down, right)
 
-prod(nums)
+solution_day3_p2 <- prod(nums)
 
 
 ```
 
-#Day 4
+# Day 4
 
-##Part 1
+https://adventofcode.com/2020/day/4
+
+## Part 1
+For day 4 we were given a messy data set with sets of variables with missing or present values (presented in an inconsistent delimitation). We had to determine how many sets were complete, not counting one particular variable (cid).
 
 ```{r}
 day4 <- read_file("data/day4.txt")
@@ -194,7 +230,7 @@ day4 <- day4 %>% str_extract_all(regex(r'{(^.+$(\r\n)?)+}', multiline = TRUE))
 day4 <- day4[[1]]
   
 
-passport = 1:length(day4)
+passport <- 1:length(day4)
 
 day4_codes_list <- lapply(passport, function(iter){
     strsplit(day4[iter], ":|\r\n| ") %>% 
@@ -213,9 +249,13 @@ day4_valid <- day4_codes %>%
   select(-cid) %>% 
   na.omit()
 
-dim(day4_valid)
+solution_day4_p1 <- dim(day4_valid)[1]
 
 ```
+
+## Part 2
+
+Given a set of conditions for each variable we had to determine not only whether each set was complete, but whether every variable was valid.
 
 ```{r}
 day4_valid_2 <- day4_valid %>% 
@@ -250,6 +290,6 @@ num_valid <- lapply(present, function(iter){
     return(0)
   }
 })
-do.call("sum", num_valid)
+solution_day4_p2 <- do.call("sum", num_valid)
 ```
 
