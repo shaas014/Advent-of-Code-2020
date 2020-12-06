@@ -383,4 +383,47 @@ solution_day5_p2 <- left_join(all_seats, seat_ids) %>%
 
 
 ```
+# Day 6
+
+## Part 1
+Day 6 has us taking answers from individuals in a variety of groups (separated by blank lines). We had to find how many unique questions were answered "yes" to by any group member and summing between groups.
+
+```{r}
+head(read_csv("data/day6.txt"))
+
+day6 <- read_file("data/day6.txt")
+
+day6 <- day6 %>% str_extract_all(regex(r"{(^.+$(\n)?)+}", multiline = TRUE)) %>% 
+  unlist()
+
+
+unique_answers <- lapply(day6, function(group){
+  yeses <- unique(strsplit(group, "|\n")[[1]])
+  yeses <- yeses[yeses != ""]
+  return(length(yeses))
+})
+
+solution_day6_p1 <- do.call("sum", unique_answers)
+
+```
+
+## Part 2
+For part 2 we instead had to find the number of questions in which <b>all</b> group members answered "yes" to.
+
+```{r message=FALSE, warning=FALSE}
+
+all_answers <- lapply(day6, function(group){
+  group_size <- length(strsplit(group, "\n")[[1]])
+  yeses <- strsplit(group, "|\n")[[1]] 
+  yeses <- yeses[yeses != ""]
+  yesperq <- yeses %>% 
+    as_tibble() %>% 
+    group_by(value) %>% 
+    summarise(repeats = length(value)) %>% 
+    filter(repeats == group_size)
+  return(dim(yesperq)[1])
+})
+solution_day6_p2 <- do.call("sum", all_answers)
+
+```
 

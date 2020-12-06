@@ -1975,6 +1975,57 @@ solution_day5_p2 &lt;- left_join(all_seats, seat_ids) %&gt;%
 <pre><code>## Joining, by = &quot;seat&quot;</code></pre>
 </div>
 </div>
+<div id="day-6" class="section level1">
+<h1>Day 6</h1>
+<div id="part-1-5" class="section level2">
+<h2>Part 1</h2>
+<p>Day 6 has us taking answers from individuals in a variety of groups (separated by blank lines). We had to find how many unique questions were answered “yes” to by any group member and summing between groups.</p>
+<pre class="r"><code>head(read_csv(&quot;data/day6.txt&quot;))</code></pre>
+<pre><code>## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   ltbriofs = col_character()
+## )</code></pre>
+<pre><code>## # A tibble: 6 x 1
+##   ltbriofs     
+##   &lt;chr&gt;        
+## 1 bitolfsr     
+## 2 olitfrbs     
+## 3 sbirloft     
+## 4 sbrftiol     
+## 5 erlnjxsqaygzo
+## 6 eznagxlqjry</code></pre>
+<pre class="r"><code>day6 &lt;- read_file(&quot;data/day6.txt&quot;)
+
+day6 &lt;- day6 %&gt;% str_extract_all(regex(r&quot;{(^.+$(\n)?)+}&quot;, multiline = TRUE)) %&gt;% 
+  unlist()
+
+
+unique_answers &lt;- lapply(day6, function(group){
+  yeses &lt;- unique(strsplit(group, &quot;|\n&quot;)[[1]])
+  yeses &lt;- yeses[yeses != &quot;&quot;]
+  return(length(yeses))
+})
+
+solution_day6_p1 &lt;- do.call(&quot;sum&quot;, unique_answers)</code></pre>
+</div>
+<div id="part-2-5" class="section level2">
+<h2>Part 2</h2>
+<p>For part 2 we instead had to find the number of questions in which <b>all</b> group members answered “yes” to.</p>
+<pre class="r"><code>all_answers &lt;- lapply(day6, function(group){
+  group_size &lt;- length(strsplit(group, &quot;\n&quot;)[[1]])
+  yeses &lt;- strsplit(group, &quot;|\n&quot;)[[1]] 
+  yeses &lt;- yeses[yeses != &quot;&quot;]
+  yesperq &lt;- yeses %&gt;% 
+    as_tibble() %&gt;% 
+    group_by(value) %&gt;% 
+    summarise(repeats = length(value)) %&gt;% 
+    filter(repeats == group_size)
+  return(dim(yesperq)[1])
+})
+solution_day6_p2 &lt;- do.call(&quot;sum&quot;, all_answers)</code></pre>
+</div>
+</div>
 
 
 
