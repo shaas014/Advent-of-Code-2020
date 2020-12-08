@@ -2026,6 +2026,67 @@ solution_day6_p1 &lt;- do.call(&quot;sum&quot;, unique_answers)</code></pre>
 solution_day6_p2 &lt;- do.call(&quot;sum&quot;, all_answers)</code></pre>
 </div>
 </div>
+<div id="day-7" class="section level1">
+<h1>Day 7</h1>
+<div id="part-1-6" class="section level2">
+<h2>Part 1</h2>
+<p>We were given a list of rules of where each type of bags contains a number of each other type of bag. For part 1 we needed to calculate how many types of bags would hold (directly and indirectly) a specific type of bag (shiny gold).</p>
+<pre class="r"><code>day7 &lt;- read_delim(&quot;data/day7.txt&quot;, delim = &quot;\n&quot;, col_names = F)</code></pre>
+<pre><code>## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   X1 = col_character()
+## )</code></pre>
+<pre class="r"><code>day7 &lt;- day7 %&gt;% 
+  separate(X1, into = c(&quot;container&quot;, &quot;x1&quot;, &quot;x2&quot;, &quot;x3&quot;, &quot;x4&quot;), sep = &quot; bags contain |, &quot;, fill = &quot;right&quot;) %&gt;% 
+  pivot_longer(cols = -container,
+               names_to = NULL,
+               values_to = &quot;inside&quot;,
+               values_drop_na = TRUE) %&gt;% 
+  separate(inside, into = c(&quot;number&quot;, &quot;inside&quot;), sep = &quot; &quot;, extra = &quot;merge&quot;)
+
+day7$inside &lt;- gsub(&quot;\\.| bag| bags&quot;, &quot;&quot;, day7$inside)
+
+
+
+type &lt;- &quot;shiny gold&quot;
+all_bags &lt;- vector()
+
+while (length(type) &gt; 0){
+  holder &lt;- vector()
+  for (i in 1:length(type)){
+    holder &lt;- unique(c(holder, day7$container[day7$inside == type[i]]))
+  }
+  type &lt;- holder[!(holder %in% all_bags)]
+  all_bags &lt;- unique(c(all_bags, holder))
+}
+ 
+solution_day7_p1 &lt;- length(all_bags)</code></pre>
+</div>
+<div id="part-2-6" class="section level2">
+<h2>part 2</h2>
+<p>For part 2 we needed to find how many bags were within a particular type of bag (shiny gold).</p>
+<pre class="r"><code>day7$number &lt;- as.numeric(day7$number)</code></pre>
+<pre><code>## Warning: NAs introduced by coercion</code></pre>
+<pre class="r"><code>day7 &lt;- na.omit(day7)
+
+type &lt;- tibble(number = 1, inside = &quot;shiny gold&quot;)
+all_bags &lt;- tibble()
+
+while (length(type$number) &gt; 0){
+  held &lt;- tibble()
+  for (i in 1:length(type$number)){
+    held &lt;- tibble(number = day7$number[day7$container == type$inside[i]], inside = day7$inside[day7$container == type$inside[i]]) %&gt;% 
+      mutate(number = number * type$number[i]) %&gt;% 
+      rbind(held)
+  }
+  type &lt;- held
+  all_bags &lt;- rbind(all_bags, held)
+}
+
+solution_day7_p2 &lt;- sum(all_bags$number)</code></pre>
+</div>
+</div>
 
 
 

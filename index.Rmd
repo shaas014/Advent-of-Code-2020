@@ -427,3 +427,69 @@ solution_day6_p2 <- do.call("sum", all_answers)
 
 ```
 
+
+
+# Day 7
+
+## Part 1
+
+We were given a list of rules of where each type of bags contains a number of each other type of bag. For part 1 we needed to calculate how many types of bags would hold (directly and indirectly) a specific type of bag (shiny gold).
+
+```{r}
+day7 <- read_delim("data/day7.txt", delim = "\n", col_names = F)
+
+day7 <- day7 %>% 
+  separate(X1, into = c("container", "x1", "x2", "x3", "x4"), sep = " bags contain |, ", fill = "right") %>% 
+  pivot_longer(cols = -container,
+               names_to = NULL,
+               values_to = "inside",
+               values_drop_na = TRUE) %>% 
+  separate(inside, into = c("number", "inside"), sep = " ", extra = "merge")
+
+day7$inside <- gsub("\\.| bag| bags", "", day7$inside)
+
+
+
+type <- "shiny gold"
+all_bags <- vector()
+
+while (length(type) > 0){
+  holder <- vector()
+  for (i in 1:length(type)){
+    holder <- unique(c(holder, day7$container[day7$inside == type[i]]))
+  }
+  type <- holder[!(holder %in% all_bags)]
+  all_bags <- unique(c(all_bags, holder))
+}
+ 
+solution_day7_p1 <- length(all_bags)
+
+```
+
+
+## Part 2
+
+For part 2 we needed to find how many bags were within a particular type of bag (shiny gold).
+
+```{r}
+day7$number <- as.numeric(day7$number)
+day7 <- na.omit(day7)
+
+type <- tibble(number = 1, inside = "shiny gold")
+all_bags <- tibble()
+
+while (length(type$number) > 0){
+  held <- tibble()
+  for (i in 1:length(type$number)){
+    held <- tibble(number = day7$number[day7$container == type$inside[i]], inside = day7$inside[day7$container == type$inside[i]]) %>% 
+      mutate(number = number * type$number[i]) %>% 
+      rbind(held)
+  }
+  type <- held
+  all_bags <- rbind(all_bags, held)
+}
+
+solution_day7_p2 <- sum(all_bags$number)
+
+```
+
