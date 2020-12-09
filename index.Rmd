@@ -493,3 +493,98 @@ solution_day7_p2 <- sum(all_bags$number)
 
 ```
 
+# Day 8
+
+## Part 1
+Day 8 has us debugging a program in an infinite loop. There are three commands (acc, jmp, and nop). If acc is read then the accumulator (starting at 0) increases by the numeric value on that line and then the next line is read. If jmp is read, we advance the number of lines given (or go back if the number is negative). If nop is read nothing happens and the next line is read. The goal for part 1 is to find the accumulator value when a line is first read for the second time (i.e. the beginning of an infinite loop).
+
+
+```{r}
+day8 <- read_csv("data/day8.txt", col_names = F)
+head(day8)
+
+day8 <- day8 %>% 
+  separate(X1, into = c("command", "step"), sep = " ") %>% 
+  mutate(step = as.numeric(step),
+         visit = 0)
+
+accumulator <- 0
+i <- 1
+while(!(2 %in% day8$visit)){
+  day8$visit[i] <- day8$visit[i] + 1
+  if(day8$visit[i] < 2){
+    if(day8$command[i] == "acc"){
+      accumulator <- accumulator + day8$step[i]
+      i <- i + 1}
+    else{
+      if (day8$command[i] == "jmp"){
+        i <- i + day8$step[i]}
+      else{
+        if (day8$command[i] == "nop"){
+          i <- i + 1}
+      }
+    }
+  } 
+}
+
+solution_day8_p1 <- accumulator
+```
+
+
+## Part 2
+
+To fix the problem we have to change either one jmp to a nop or a nop to a jmp. After finding which is correct we must return the final accumulator value when the program is run through.
+
+```{r}
+day8 <- day8 %>% rowid_to_column()
+
+changes <- day8$rowid[day8$command %in% c("jmp", "nop") & day8$visit == 1]
+
+
+test_run <- function(data){
+   accumulator <- 0
+   i <- 1
+   complete <- TRUE
+   while(complete & i <= dim(data)[1]){
+     data$visit[i] <- data$visit[i] + 1
+     if(data$visit[i] < 2){
+       if(data$command[i] == "acc"){
+         accumulator <- accumulator + data$step[i]
+         i <- i + 1}
+       else{
+         if (data$command[i] == "jmp"){
+           i <- i + data$step[i]}
+         else{
+           if (data$command[i] == "nop"){
+             i <- i + 1}
+         }
+      }
+     }else{
+      complete <- FALSE
+    }
+   }
+   return(tibble(complete = complete, acc = accumulator))
+}
+
+
+
+j <- 1
+test <- tibble(complete = FALSE, acc = 0)
+while(!test$complete){
+  day8_test <- day8
+  if(day8_test$command[day8$rowid == changes[j]] == "jmp"){
+    day8_test$command[day8$rowid == changes[j]] <- "nop"
+  }else{
+    day8_test$command[day8$rowid == changes[j]] <- "jmp"
+  }
+  day8_test$visit <- 0
+  
+  test <- test_run(day8_test)
+  j <- j + 1
+}
+
+solution_day8_p2 <- test$acc
+
+```
+
+
