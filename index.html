@@ -2064,7 +2064,7 @@ while (length(type) &gt; 0){
 solution_day7_p1 &lt;- length(all_bags)</code></pre>
 </div>
 <div id="part-2-6" class="section level2">
-<h2>part 2</h2>
+<h2>Part 2</h2>
 <p>For part 2 we needed to find how many bags were within a particular type of bag (shiny gold).</p>
 <pre class="r"><code>day7$number &lt;- as.numeric(day7$number)</code></pre>
 <pre><code>## Warning: NAs introduced by coercion</code></pre>
@@ -2085,6 +2085,224 @@ while (length(type$number) &gt; 0){
 }
 
 solution_day7_p2 &lt;- sum(all_bags$number)</code></pre>
+</div>
+</div>
+<div id="day-8" class="section level1">
+<h1>Day 8</h1>
+<div id="part-1-7" class="section level2">
+<h2>Part 1</h2>
+<p>Day 8 has us debugging a program in an infinite loop. There are three commands (acc, jmp, and nop). If acc is read then the accumulator (starting at 0) increases by the numeric value on that line and then the next line is read. If jmp is read, we advance the number of lines given (or go back if the number is negative). If nop is read nothing happens and the next line is read. The goal for part 1 is to find the accumulator value when a line is first read for the second time (i.e. the beginning of an infinite loop).</p>
+<pre class="r"><code>day8 &lt;- read_csv(&quot;data/day8.txt&quot;, col_names = F)</code></pre>
+<pre><code>## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   X1 = col_character()
+## )</code></pre>
+<pre class="r"><code>head(day8)</code></pre>
+<pre><code>## # A tibble: 6 x 1
+##   X1      
+##   &lt;chr&gt;   
+## 1 acc +8  
+## 2 acc +37 
+## 3 jmp +328
+## 4 jmp +574
+## 5 nop +321
+## 6 acc +17</code></pre>
+<pre class="r"><code>day8 &lt;- day8 %&gt;% 
+  separate(X1, into = c(&quot;command&quot;, &quot;step&quot;), sep = &quot; &quot;) %&gt;% 
+  mutate(step = as.numeric(step),
+         visit = 0)
+
+accumulator &lt;- 0
+i &lt;- 1
+while(!(2 %in% day8$visit)){
+  day8$visit[i] &lt;- day8$visit[i] + 1
+  if(day8$visit[i] &lt; 2){
+    if(day8$command[i] == &quot;acc&quot;){
+      accumulator &lt;- accumulator + day8$step[i]
+      i &lt;- i + 1}
+    else{
+      if (day8$command[i] == &quot;jmp&quot;){
+        i &lt;- i + day8$step[i]}
+      else{
+        if (day8$command[i] == &quot;nop&quot;){
+          i &lt;- i + 1}
+      }
+    }
+  } 
+}
+
+solution_day8_p1 &lt;- accumulator</code></pre>
+</div>
+<div id="part-2-7" class="section level2">
+<h2>Part 2</h2>
+<p>To fix the problem we have to change either one jmp to a nop or a nop to a jmp. After finding which is correct we must return the final accumulator value when the program is run through.</p>
+<pre class="r"><code>day8 &lt;- day8 %&gt;% rowid_to_column()
+
+changes &lt;- day8$rowid[day8$command %in% c(&quot;jmp&quot;, &quot;nop&quot;) &amp; day8$visit == 1]
+
+
+test_run &lt;- function(data){
+   accumulator &lt;- 0
+   i &lt;- 1
+   complete &lt;- TRUE
+   while(complete &amp; i &lt;= dim(data)[1]){
+     data$visit[i] &lt;- data$visit[i] + 1
+     if(data$visit[i] &lt; 2){
+       if(data$command[i] == &quot;acc&quot;){
+         accumulator &lt;- accumulator + data$step[i]
+         i &lt;- i + 1}
+       else{
+         if (data$command[i] == &quot;jmp&quot;){
+           i &lt;- i + data$step[i]}
+         else{
+           if (data$command[i] == &quot;nop&quot;){
+             i &lt;- i + 1}
+         }
+      }
+     }else{
+      complete &lt;- FALSE
+    }
+   }
+   return(tibble(complete = complete, acc = accumulator))
+}
+
+
+
+j &lt;- 1
+test &lt;- tibble(complete = FALSE, acc = 0)
+while(!test$complete){
+  day8_test &lt;- day8
+  if(day8_test$command[day8$rowid == changes[j]] == &quot;jmp&quot;){
+    day8_test$command[day8$rowid == changes[j]] &lt;- &quot;nop&quot;
+  }else{
+    day8_test$command[day8$rowid == changes[j]] &lt;- &quot;jmp&quot;
+  }
+  day8_test$visit &lt;- 0
+  
+  test &lt;- test_run(day8_test)
+  j &lt;- j + 1
+}
+
+solution_day8_p2 &lt;- test$acc</code></pre>
+</div>
+</div>
+<div id="day-9" class="section level1">
+<h1>Day 9</h1>
+<div id="part-1-8" class="section level2">
+<h2>Part 1</h2>
+<p>We had a list of numbers. Starting at the 26th number, a number was considered valid if any two numbers in the previous 25 numbers added to that number. We had to find the first invalid number.</p>
+<pre class="r"><code>day9 &lt;- read_csv(&quot;data/day9.txt&quot;, col_names = FALSE)</code></pre>
+<pre><code>## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   X1 = col_double()
+## )</code></pre>
+<pre class="r"><code>day9 &lt;- day9 %&gt;% 
+  transmute(numbers = X1)
+
+i &lt;- 1
+k &lt;- TRUE
+while(k){
+  preamble &lt;- day9[i:(i+24),1]
+  total &lt;- day9$numbers[i+25]
+  high_values &lt;- preamble[preamble$numbers &gt; total/2,]
+  low_values &lt;- preamble[preamble$numbers &lt; total/2,]
+  pair &lt;- high_values %&gt;% 
+    mutate(search_value = total - numbers) %&gt;% 
+    inner_join(low_values, by = c(&quot;search_value&quot; = &quot;numbers&quot;))
+  
+  if(dim(pair)[1] &gt; 0){
+    i &lt;- i + 1
+    
+  }else{ if(length(preamble$numbers[preamble$numbers == day9$numbers[i +25]/2]) &gt;= 2){
+    i &lt;- i + 1
+  }else{
+    
+  }
+    k &lt;- FALSE
+  }
+}
+
+solution_day9_p1 &lt;- day9$numbers[i + 25]</code></pre>
+</div>
+<div id="part-2-8" class="section level2">
+<h2>Part 2</h2>
+<p>We had to find the list of contiguous numbers (of at least 2) that summed to the invalid number found in part 1.</p>
+<pre class="r"><code>i &lt;- 1
+j &lt;- 1
+k &lt;- 0
+cont &lt;- vector()
+while (k != solution_day9_p1 | length(cont) &lt; 2){
+  if(k &lt; solution_day9_p1){
+    cont[j] &lt;- day9$numbers[i]
+    k &lt;- sum(cont)
+    j &lt;- j + 1
+    i &lt;- i + 1
+  }else{
+    cont &lt;- cont[2:length(cont)]
+    k &lt;- sum(cont)
+    j &lt;- j - 1
+  }
+}
+
+solution_day9_p2 &lt;- min(cont) + max(cont)</code></pre>
+</div>
+</div>
+<div id="day-10" class="section level1">
+<h1>Day 10</h1>
+<div id="part-1-9" class="section level2">
+<h2>Part 1</h2>
+<p>We were given a list of numbers and needed to find the distance between each number (in order).</p>
+<pre class="r"><code>day10 &lt;- read_csv(&quot;data/day10.txt&quot;, col_names = F)</code></pre>
+<pre><code>## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   X1 = col_double()
+## )</code></pre>
+<pre class="r"><code>day10 &lt;- day10 %&gt;% 
+  transmute(jolts = sort(X1))
+
+day10 &lt;- rbind(0,day10, max(day10 + 3)) %&gt;% 
+  rowid_to_column()
+
+jolts &lt;- lapply(day10$rowid[1:(dim(day10)[1]-1)], function(iter){
+  return(day10$jolts[iter + 1] - day10$jolts[iter])
+})
+
+jolts &lt;- do.call(&quot;rbind&quot;, jolts) 
+  
+
+jolt_summary &lt;- jolts %&gt;% 
+  as_tibble() %&gt;% 
+  group_by(V1) %&gt;% 
+  summarise(count = n())</code></pre>
+<pre><code>## `summarise()` ungrouping output (override with `.groups` argument)</code></pre>
+<pre class="r"><code>solution_day10_p1 &lt;- jolt_summary$count[1] * jolt_summary$count[2]</code></pre>
+</div>
+<div id="part-2-9" class="section level2">
+<h2>Part 2</h2>
+<p>With the same list, if each number can only move to a number within 3 of it, we needed to find the number of possible paths that would get from 0 to the maximum number +3.</p>
+<pre class="r"><code>ends &lt;- tibble(num = 1, value = 0)
+
+
+for (iter in 1:(dim(day10)[1]-1)){
+  if (((day10$jolts[iter + 1] - day10$jolts[iter]) == 3)|((day10$jolts[iter + 2] - day10$jolts[iter]) &gt; 3)){
+    add_path &lt;- day10$jolts[iter + 1]
+  }else{ if((day10$jolts[iter + 3] - day10$jolts[iter]) &gt; 3){
+    add_path &lt;- day10$jolts[(iter+1):(iter + 2)]
+  }else{
+    add_path &lt;- day10$jolts[(iter+1):(iter + 3)]
+  }
+  }
+   ends &lt;- rbind(ends, tibble(num = ends$num[ends$value == day10$jolts[iter]], value = add_path)) %&gt;% 
+     filter(value != day10$jolts[iter]) %&gt;% 
+     group_by(value) %&gt;% 
+     summarize(num = sum(num))
+}
+
+solution_day10_p2 &lt;-ends$num
+#print(ends$num, digits = 10)</code></pre>
 </div>
 </div>
 

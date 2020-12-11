@@ -587,4 +587,132 @@ solution_day8_p2 <- test$acc
 
 ```
 
+# Day 9
+
+## Part 1
+
+We had a list of numbers. Starting at the 26th number, a number was considered valid if any two numbers in the previous 25 numbers added to that number. We had to find the first invalid number.
+
+```{r}
+day9 <- read_csv("data/day9.txt", col_names = FALSE)
+
+day9 <- day9 %>% 
+  transmute(numbers = X1)
+
+i <- 1
+k <- TRUE
+while(k){
+  preamble <- day9[i:(i+24),1]
+  total <- day9$numbers[i+25]
+  high_values <- preamble[preamble$numbers > total/2,]
+  low_values <- preamble[preamble$numbers < total/2,]
+  pair <- high_values %>% 
+    mutate(search_value = total - numbers) %>% 
+    inner_join(low_values, by = c("search_value" = "numbers"))
+  
+  if(dim(pair)[1] > 0){
+    i <- i + 1
+    
+  }else{ if(length(preamble$numbers[preamble$numbers == day9$numbers[i +25]/2]) >= 2){
+    i <- i + 1
+  }else{
+    
+  }
+    k <- FALSE
+  }
+}
+
+solution_day9_p1 <- day9$numbers[i + 25]
+```
+
+
+## Part 2
+
+We had to find the list of contiguous numbers (of at least 2) that summed to the invalid number found in part 1.
+
+```{r}
+
+
+i <- 1
+j <- 1
+k <- 0
+cont <- vector()
+while (k != solution_day9_p1 | length(cont) < 2){
+  if(k < solution_day9_p1){
+    cont[j] <- day9$numbers[i]
+    k <- sum(cont)
+    j <- j + 1
+    i <- i + 1
+  }else{
+    cont <- cont[2:length(cont)]
+    k <- sum(cont)
+    j <- j - 1
+  }
+}
+
+solution_day9_p2 <- min(cont) + max(cont)
+
+
+
+
+
+```
+
+# Day 10
+
+## Part 1
+We were given a list of numbers and needed to find the distance between each number (in order).
+
+```{r}
+day10 <- read_csv("data/day10.txt", col_names = F)
+
+day10 <- day10 %>% 
+  transmute(jolts = sort(X1))
+
+day10 <- rbind(0,day10, max(day10 + 3)) %>% 
+  rowid_to_column()
+
+jolts <- lapply(day10$rowid[1:(dim(day10)[1]-1)], function(iter){
+  return(day10$jolts[iter + 1] - day10$jolts[iter])
+})
+
+jolts <- do.call("rbind", jolts) 
+  
+
+jolt_summary <- jolts %>% 
+  as_tibble() %>% 
+  group_by(V1) %>% 
+  summarise(count = n())
+
+
+solution_day10_p1 <- jolt_summary$count[1] * jolt_summary$count[2]
+```
+
+
+## Part 2
+With the same list, if each number can only move to a number within 3 of it, we needed to find the number of possible paths that would get from 0 to the maximum number +3.
+
+```{r message=FALSE, warning=FALSE}
+ends <- tibble(num = 1, value = 0)
+
+
+for (iter in 1:(dim(day10)[1]-1)){
+  if (((day10$jolts[iter + 1] - day10$jolts[iter]) == 3)|((day10$jolts[iter + 2] - day10$jolts[iter]) > 3)){
+    add_path <- day10$jolts[iter + 1]
+  }else{ if((day10$jolts[iter + 3] - day10$jolts[iter]) > 3){
+    add_path <- day10$jolts[(iter+1):(iter + 2)]
+  }else{
+    add_path <- day10$jolts[(iter+1):(iter + 3)]
+  }
+  }
+   ends <- rbind(ends, tibble(num = ends$num[ends$value == day10$jolts[iter]], value = add_path)) %>% 
+     filter(value != day10$jolts[iter]) %>% 
+     group_by(value) %>% 
+     summarize(num = sum(num))
+}
+
+solution_day10_p2 <-ends$num
+#print(ends$num, digits = 10)
+
+```
 
