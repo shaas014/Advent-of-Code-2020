@@ -2305,6 +2305,387 @@ solution_day10_p2 &lt;-ends$num
 #print(ends$num, digits = 10)</code></pre>
 </div>
 </div>
+<div id="day-11" class="section level1">
+<h1>Day 11</h1>
+<div id="part-1-10" class="section level2">
+<h2>part 1</h2>
+<pre class="r"><code>day11 &lt;- read_csv(&quot;data/day11.txt&quot;, col_names = F)</code></pre>
+<pre><code>## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   X1 = col_character()
+## )</code></pre>
+<pre class="r"><code>day11 &lt;- day11 %&gt;% 
+  separate(col = X1, into = paste(&quot;x&quot;, 0:99, sep = &quot;&quot;), sep = &quot;&quot;) %&gt;% 
+  select(-x0)
+
+
+
+adjacent &lt;- list(c(0,1),
+                 c(0,-1),
+                 c(1,-1),
+                 c(1,0),
+                 c(1,1),
+                 c(-1,-1),
+                 c(-1,0),
+                 c(-1,1))
+
+occupied &lt;- function(delta, i, j){
+  if (i + delta[1] &lt; 1 | i + delta[1] &gt; dim(day11)[1]){return(0)}
+  if (j + delta[2] &lt; 1 | j + delta[2] &gt; dim(day11)[2]){return(0)}
+  
+  if(state_current[i + delta[1], j + delta[2]] == &quot;#&quot;){
+    return(1)
+  }else{
+    return(0)
+  }
+}
+
+sum.occupied &lt;- function(out,input, i, j){
+  res &lt;- out + occupied(input, i,j)
+  return(res)
+}
+
+#Using lapply
+i_range &lt;- 1:dim(day11)[1]
+j_range &lt;- 1:dim(day11)[2]
+state_current &lt;- day11
+state_future &lt;- day11
+k &lt;- FALSE
+
+
+iter &lt;- list()
+m &lt;- 1
+for (i in i_range){
+  for(j in j_range){
+    iter[[m]] &lt;- c(i,j)
+    m &lt;- m+1
+  }
+}
+
+
+seat_state &lt;- function(iter){
+  if(state_current[iter[1], iter[2]] != &quot;.&quot;){
+        count_occupied &lt;- reduce(adjacent, sum.occupied, i = iter[1], j = iter[2], .init = 0)
+        if (state_current[iter[1], iter[2]] == &quot;L&quot;){
+      if(count_occupied == 0){
+        return(&quot;#&quot;)
+      }else{
+        return(&quot;L&quot;)
+      }
+      }
+    if ((state_current[iter[1], iter[2]] == &quot;#&quot;)){
+      if(count_occupied &gt;= 4){
+        return(&quot;L&quot;)
+      }else{
+      return(&quot;#&quot;)
+    }
+  }
+    }else{
+    return(&quot;.&quot;)
+  }
+}
+
+
+while(!k){
+  state &lt;- lapply(iter, seat_state)
+  state_future &lt;- unlist(state) %&gt;% 
+    matrix(nrow = length(i_range), ncol = length(j_range), byrow = TRUE)
+  k &lt;- identical(state_current, state_future)
+  state_current &lt;- state_future
+}
+
+solution_day11_p1 &lt;- length(state_future[state_future == &quot;#&quot;])</code></pre>
+</div>
+<div id="part-2-10" class="section level2">
+<h2>Part 2</h2>
+<pre class="r"><code>state_current &lt;- day11
+state_future &lt;- day11
+k &lt;- FALSE
+
+adjacent_array &lt;- array(dim = c(length(i_range), length(j_range), 12), dimnames = list(NULL, NULL, c(&quot;right&quot;,
+                                                                                                    &quot;right.up.col&quot;,
+                                                                                                    &quot;right.up.row&quot;,
+                                                                                                    &quot;right.down.col&quot;,
+                                                                                                    &quot;right.down.row&quot;,
+                                                                                                    &quot;left&quot;,
+                                                                                                    &quot;left.up.col&quot;,
+                                                                                                    &quot;left.up.row&quot;,
+                                                                                                    &quot;left.down.col&quot;,
+                                                                                                    &quot;left.down.row&quot;,
+                                                                                                    &quot;up&quot;,
+                                                                                                    &quot;down&quot;)))
+iter &lt;- list()
+m &lt;- 1
+for (i in i_range){
+  for(j in j_range){
+    iter[[m]] &lt;- c(i,j)
+    m &lt;- m + 1
+  }
+}
+
+for (i in seq_along(i_range)){
+  for (j in seq_along(j_range)){
+    #right
+    k &lt;- j + 1
+    if (k &lt;= max(j_range)){n &lt;- state_current[i,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    while(n){
+      k &lt;- k + 1
+      if (k &lt;= max(j_range)){n &lt;- state_current[i,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    }
+    adjacent_array[i,j,1] &lt;- if(k &lt;= max(j_range)){k - j}else{NA}
+    
+    #right.up
+    k &lt;- j + 1
+    l &lt;- i - 1
+    if (k &lt;= max(j_range) &amp; l &gt; 0){n &lt;- state_current[l,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    
+    while(n){
+      k &lt;- k + 1
+      l &lt;- l - 1
+      if (k &lt;= max(j_range) &amp; l &gt; 0){n &lt;- state_current[l,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    }
+    adjacent_array[i,j,2] &lt;- if(k &lt;= max(j_range)){k - j}else{NA}
+    adjacent_array[i,j,3] &lt;- if(l &gt; 0){l - i}else{NA}
+    
+    #right.down
+    k &lt;- j + 1
+    l &lt;- i + 1
+    if (k &lt;= max(j_range) &amp; l &lt;= max(i_range)){n &lt;- state_current[l,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    while(n){
+      k &lt;- k + 1
+      l &lt;- l + 1
+      if (k &lt;= max(j_range) &amp; l &lt;= max(i_range)){n &lt;- state_current[l,k] == &quot;.&quot;} else{n &lt;- FALSE}
+      
+    }
+    adjacent_array[i,j,4] &lt;- if(k &lt;= max(j_range)){k - j}else{NA}
+    adjacent_array[i,j,5] &lt;- if(l &lt;= max(i_range)){l - i}else{NA}
+    
+    #left
+    k &lt;- j - 1
+    if (k &gt; 0){n &lt;- state_current[i,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    while(n){
+      k &lt;- k - 1
+      if (k &gt; 0){n &lt;- state_current[i,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    }
+    adjacent_array[i,j,6] &lt;- if(k &gt; 0){k - j}else{NA}
+    
+    #left.up
+    k &lt;- j - 1
+    l &lt;- i - 1
+    if (k &gt; 0 &amp; l &gt; 0){n &lt;- state_current[l,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    while(n){
+      k &lt;- k - 1
+      l &lt;- l - 1
+      if (k &gt; 0 &amp; l &gt; 0){n &lt;- state_current[l,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    }
+    adjacent_array[i,j,7] &lt;- if(k &gt; 0){k - j}else{NA}
+    adjacent_array[i,j,8] &lt;- if(l &gt; 0){l - i}else{NA}
+    
+    #left.down
+    k &lt;- j - 1
+    l &lt;- i + 1
+    if (k &gt; 0 &amp; l &lt;= max(i_range)){n &lt;- state_current[l,k] == &quot;.&quot;} else{n &lt;- FALSE}
+    while(n){
+      k &lt;- k - 1
+      l &lt;- l + 1
+      if (k &gt; 0 &amp; l &lt;= max(i_range)){n &lt;- state_current[l,k] == &quot;.&quot;} else{n &lt;- FALSE}
+      
+    }
+    adjacent_array[i,j,9] &lt;- if(k &gt; 0){k - j}else{NA}
+    adjacent_array[i,j,10] &lt;- if(l &lt;= max(i_range)){l - i}else{NA}
+    
+    #up
+    l &lt;- i - 1
+    
+    
+    if (l &gt; 0){n &lt;- state_current[l,j] == &quot;.&quot;} else{n &lt;- FALSE}
+    while(n){
+      l &lt;- l - 1
+      if (l &gt; 0){n &lt;- state_current[l,j] == &quot;.&quot;} else{n &lt;- FALSE}
+    }
+    adjacent_array[i,j,11] &lt;- if(l &gt; 0){l - i}else{NA}
+    
+    #down
+    l &lt;- i + 1
+    if (l &lt;= max(i_range)){n &lt;- state_current[l,j] == &quot;.&quot;} else{n &lt;- FALSE}
+    while(n){
+      l &lt;- l + 1
+      if (l &lt;= max(i_range)){n &lt;- state_current[l,j] == &quot;.&quot;} else{n &lt;- FALSE}
+    }
+    adjacent_array[i,j,12] &lt;- if(l &lt;= max(i_range)){l - i}else{NA}
+  }
+}
+
+occupied_p2 &lt;- function(delta, i, j){
+  if (is.na(delta[1])){return(0)}
+  if (is.na(delta[2])){return(0)}
+  
+  if(state_current[i + delta[1], j + delta[2]] == &quot;#&quot;){
+    return(1)
+  }else{
+    return(0)
+  }
+}
+
+sum.occupied_p2 &lt;- function(out,input, i, j){
+  res &lt;- out + occupied_p2(input, i,j)
+  return(res)
+}
+
+seat_state_p2 &lt;- function(iter){
+  if(state_current[iter[1], iter[2]] != &quot;.&quot;){
+    
+    adjacent &lt;- list(c(0,adjacent_array[iter[1],iter[2],1]),
+                 c(0,adjacent_array[iter[1],iter[2],6]),
+                 c(adjacent_array[iter[1],iter[2],3], adjacent_array[iter[1],iter[2],2]),
+                 c(adjacent_array[iter[1],iter[2],5], adjacent_array[iter[1],iter[2],4]),
+                 c(adjacent_array[iter[1],iter[2],8], adjacent_array[iter[1],iter[2],7]),
+                 c(adjacent_array[iter[1],iter[2],10], adjacent_array[iter[1],iter[2],9]),
+                 c(adjacent_array[iter[1],iter[2],11], 0),
+                 c(adjacent_array[iter[1],iter[2],12], 0))
+    count_occupied &lt;- reduce(adjacent, sum.occupied_p2, i = iter[1], j = iter[2], .init = 0)
+    if (state_current[iter[1], iter[2]] == &quot;L&quot;){
+      if(count_occupied == 0){
+        return(&quot;#&quot;)
+      }else{
+        return(&quot;L&quot;)
+      }
+      }
+    if ((state_current[iter[1], iter[2]] == &quot;#&quot;)){
+      if(count_occupied &gt;= 5){
+        return(&quot;L&quot;)
+      }else{
+      return(&quot;#&quot;)
+    }
+  }
+    }else{
+    return(&quot;.&quot;)
+  }
+}
+
+ptm &lt;- proc.time()
+while(!k){
+  state &lt;- lapply(iter, seat_state_p2)
+  state_future &lt;- do.call(&quot;rbind&quot;,state) %&gt;% 
+    matrix(nrow = length(i_range), ncol = length(j_range), byrow = TRUE)
+  k &lt;- identical(state_current, state_future)
+  state_current &lt;- state_future
+}
+proc.time() - ptm</code></pre>
+<pre><code>##    user  system elapsed 
+##       0       0       0</code></pre>
+<pre class="r"><code>solution_day11_p2 &lt;- length(state_current[state_current == &quot;#&quot;])</code></pre>
+</div>
+</div>
+<div id="day-12" class="section level1">
+<h1>Day 12</h1>
+<div id="part-1-11" class="section level2">
+<h2>Part 1</h2>
+<pre class="r"><code>day12 &lt;- read_csv(&quot;data/day12.txt&quot;,col_names = FALSE)</code></pre>
+<pre><code>## 
+## -- Column specification --------------------------------------------------------
+## cols(
+##   X1 = col_character()
+## )</code></pre>
+<pre class="r"><code>head(day12)</code></pre>
+<pre><code>## # A tibble: 6 x 1
+##   X1   
+##   &lt;chr&gt;
+## 1 W5   
+## 2 F91  
+## 3 S3   
+## 4 R90  
+## 5 F98  
+## 6 S3</code></pre>
+<pre class="r"><code>day12 &lt;- day12 %&gt;% 
+  separate(X1, into = c(&quot;direction&quot;, &quot;distance&quot;), sep = &quot;(?&lt;=[A-Z])(?=[0-9])&quot;) %&gt;% 
+  mutate(distance = as.numeric(distance))
+
+
+
+move_func &lt;- function(position, direction, distance){
+  if(direction == &quot;N&quot;){
+    position[1] &lt;- position[1] + distance
+    return(position)
+  }
+  if(direction == &quot;S&quot;){
+    position[1] &lt;- position[1] - distance
+    return(position)
+  }
+  if(direction == &quot;E&quot;){
+    position[2] &lt;- position[2] + distance
+    return(position)
+  }
+  if(direction == &quot;W&quot;){
+    position[2] &lt;- position[2] - distance
+    return(position)
+  }
+}
+
+rotate_func &lt;- function(face, direction, angle){
+  if(direction == &quot;R&quot;){
+    return(cardinals[which(cardinals == face)[1] + angle/90])
+  }
+  if(direction == &quot;L&quot;){
+    return(cardinals[which(cardinals == face)[2] - angle/90])
+  }
+}
+
+current_position &lt;- c(0,0)
+dir_face &lt;- &quot;E&quot;
+cardinals &lt;- rep(c(&quot;N&quot;, &quot;E&quot;, &quot;S&quot;, &quot;W&quot;), 2)
+
+for(i in 1:dim(day12)[1]){
+   if(day12$direction[i] == &quot;F&quot;){
+      current_position &lt;- move_func(current_position, dir_face, day12$distance[i])
+   }else{
+     if (day12$direction[i] %in% c(&quot;N&quot;, &quot;S&quot;, &quot;E&quot;, &quot;W&quot;)){
+       current_position &lt;- move_func(current_position, day12$direction[i], day12$distance[i])
+     }else{
+      dir_face &lt;- rotate_func(dir_face, day12$direction[i], day12$distance[i])
+    }
+   }
+}
+
+solution_day12_p1 &lt;- sum(abs(current_position))</code></pre>
+</div>
+<div id="part-2-11" class="section level2">
+<h2>Part 2</h2>
+<pre class="r"><code>rotate_wp_func &lt;- function(position, direction, angle){
+  x &lt;- position[1]
+  y &lt;- position[2]
+  if(angle == 180){
+    return(c(-x, -y))
+  }
+  if((direction == &quot;R&quot; &amp; angle == 90)|(direction == &quot;L&quot; &amp; angle == 270)){
+    return(c(-y, x))
+  }
+  if((direction == &quot;L&quot; &amp; angle == 90)|(direction == &quot;R&quot; &amp; angle == 270)){
+    return(c(y, -x))
+  }
+}
+
+current_position &lt;- c(0,0)
+wp_position &lt;- c(1, 10)
+
+
+for(i in 1:dim(day12)[1]){
+   if(day12$direction[i] == &quot;F&quot;){
+      current_position &lt;- current_position + wp_position * day12$distance[i]
+   }else{
+     if (day12$direction[i] %in% c(&quot;N&quot;, &quot;S&quot;, &quot;E&quot;, &quot;W&quot;)){
+       wp_position &lt;- move_func(wp_position, day12$direction[i], day12$distance[i])
+     }else{
+      wp_position &lt;- rotate_wp_func(wp_position, day12$direction[i], day12$distance[i])
+     }
+   }
+  #print(list(progress = i, position = current_position, wp = wp_position))
+}
+
+solution_day12_p2 &lt;- sum(abs(current_position))</code></pre>
+</div>
+</div>
 
 
 

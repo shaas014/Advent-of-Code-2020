@@ -716,3 +716,378 @@ solution_day10_p2 <-ends$num
 
 ```
 
+# Day 11
+
+## part 1
+
+```{r}
+day11 <- read_csv("data/day11.txt", col_names = F)
+
+day11 <- day11 %>% 
+  separate(col = X1, into = paste("x", 0:99, sep = ""), sep = "") %>% 
+  select(-x0)
+
+
+
+adjacent <- list(c(0,1),
+                 c(0,-1),
+                 c(1,-1),
+                 c(1,0),
+                 c(1,1),
+                 c(-1,-1),
+                 c(-1,0),
+                 c(-1,1))
+
+occupied <- function(delta, i, j){
+  if (i + delta[1] < 1 | i + delta[1] > dim(day11)[1]){return(0)}
+  if (j + delta[2] < 1 | j + delta[2] > dim(day11)[2]){return(0)}
+  
+  if(state_current[i + delta[1], j + delta[2]] == "#"){
+    return(1)
+  }else{
+    return(0)
+  }
+}
+
+sum.occupied <- function(out,input, i, j){
+  res <- out + occupied(input, i,j)
+  return(res)
+}
+
+#Using lapply
+i_range <- 1:dim(day11)[1]
+j_range <- 1:dim(day11)[2]
+state_current <- day11
+state_future <- day11
+k <- FALSE
+
+
+iter <- list()
+m <- 1
+for (i in i_range){
+  for(j in j_range){
+    iter[[m]] <- c(i,j)
+    m <- m+1
+  }
+}
+
+
+seat_state <- function(iter){
+  if(state_current[iter[1], iter[2]] != "."){
+        count_occupied <- reduce(adjacent, sum.occupied, i = iter[1], j = iter[2], .init = 0)
+        if (state_current[iter[1], iter[2]] == "L"){
+      if(count_occupied == 0){
+        return("#")
+      }else{
+        return("L")
+      }
+      }
+    if ((state_current[iter[1], iter[2]] == "#")){
+      if(count_occupied >= 4){
+        return("L")
+      }else{
+      return("#")
+    }
+  }
+    }else{
+    return(".")
+  }
+}
+
+
+while(!k){
+  state <- lapply(iter, seat_state)
+  state_future <- unlist(state) %>% 
+    matrix(nrow = length(i_range), ncol = length(j_range), byrow = TRUE)
+  k <- identical(state_current, state_future)
+  state_current <- state_future
+}
+
+solution_day11_p1 <- length(state_future[state_future == "#"])
+
+
+
+```
+
+## Part 2
+
+```{r}
+
+state_current <- day11
+state_future <- day11
+k <- FALSE
+
+adjacent_array <- array(dim = c(length(i_range), length(j_range), 12), dimnames = list(NULL, NULL, c("right",
+                                                                                                    "right.up.col",
+                                                                                                    "right.up.row",
+                                                                                                    "right.down.col",
+                                                                                                    "right.down.row",
+                                                                                                    "left",
+                                                                                                    "left.up.col",
+                                                                                                    "left.up.row",
+                                                                                                    "left.down.col",
+                                                                                                    "left.down.row",
+                                                                                                    "up",
+                                                                                                    "down")))
+iter <- list()
+m <- 1
+for (i in i_range){
+  for(j in j_range){
+    iter[[m]] <- c(i,j)
+    m <- m + 1
+  }
+}
+
+for (i in seq_along(i_range)){
+  for (j in seq_along(j_range)){
+    #right
+    k <- j + 1
+    if (k <= max(j_range)){n <- state_current[i,k] == "."} else{n <- FALSE}
+    while(n){
+      k <- k + 1
+      if (k <= max(j_range)){n <- state_current[i,k] == "."} else{n <- FALSE}
+    }
+    adjacent_array[i,j,1] <- if(k <= max(j_range)){k - j}else{NA}
+    
+    #right.up
+    k <- j + 1
+    l <- i - 1
+    if (k <= max(j_range) & l > 0){n <- state_current[l,k] == "."} else{n <- FALSE}
+    
+    while(n){
+      k <- k + 1
+      l <- l - 1
+      if (k <= max(j_range) & l > 0){n <- state_current[l,k] == "."} else{n <- FALSE}
+    }
+    adjacent_array[i,j,2] <- if(k <= max(j_range)){k - j}else{NA}
+    adjacent_array[i,j,3] <- if(l > 0){l - i}else{NA}
+    
+    #right.down
+    k <- j + 1
+    l <- i + 1
+    if (k <= max(j_range) & l <= max(i_range)){n <- state_current[l,k] == "."} else{n <- FALSE}
+    while(n){
+      k <- k + 1
+      l <- l + 1
+      if (k <= max(j_range) & l <= max(i_range)){n <- state_current[l,k] == "."} else{n <- FALSE}
+      
+    }
+    adjacent_array[i,j,4] <- if(k <= max(j_range)){k - j}else{NA}
+    adjacent_array[i,j,5] <- if(l <= max(i_range)){l - i}else{NA}
+    
+    #left
+    k <- j - 1
+    if (k > 0){n <- state_current[i,k] == "."} else{n <- FALSE}
+    while(n){
+      k <- k - 1
+      if (k > 0){n <- state_current[i,k] == "."} else{n <- FALSE}
+    }
+    adjacent_array[i,j,6] <- if(k > 0){k - j}else{NA}
+    
+    #left.up
+    k <- j - 1
+    l <- i - 1
+    if (k > 0 & l > 0){n <- state_current[l,k] == "."} else{n <- FALSE}
+    while(n){
+      k <- k - 1
+      l <- l - 1
+      if (k > 0 & l > 0){n <- state_current[l,k] == "."} else{n <- FALSE}
+    }
+    adjacent_array[i,j,7] <- if(k > 0){k - j}else{NA}
+    adjacent_array[i,j,8] <- if(l > 0){l - i}else{NA}
+    
+    #left.down
+    k <- j - 1
+    l <- i + 1
+    if (k > 0 & l <= max(i_range)){n <- state_current[l,k] == "."} else{n <- FALSE}
+    while(n){
+      k <- k - 1
+      l <- l + 1
+      if (k > 0 & l <= max(i_range)){n <- state_current[l,k] == "."} else{n <- FALSE}
+      
+    }
+    adjacent_array[i,j,9] <- if(k > 0){k - j}else{NA}
+    adjacent_array[i,j,10] <- if(l <= max(i_range)){l - i}else{NA}
+    
+    #up
+    l <- i - 1
+    
+    
+    if (l > 0){n <- state_current[l,j] == "."} else{n <- FALSE}
+    while(n){
+      l <- l - 1
+      if (l > 0){n <- state_current[l,j] == "."} else{n <- FALSE}
+    }
+    adjacent_array[i,j,11] <- if(l > 0){l - i}else{NA}
+    
+    #down
+    l <- i + 1
+    if (l <= max(i_range)){n <- state_current[l,j] == "."} else{n <- FALSE}
+    while(n){
+      l <- l + 1
+      if (l <= max(i_range)){n <- state_current[l,j] == "."} else{n <- FALSE}
+    }
+    adjacent_array[i,j,12] <- if(l <= max(i_range)){l - i}else{NA}
+  }
+}
+
+occupied_p2 <- function(delta, i, j){
+  if (is.na(delta[1])){return(0)}
+  if (is.na(delta[2])){return(0)}
+  
+  if(state_current[i + delta[1], j + delta[2]] == "#"){
+    return(1)
+  }else{
+    return(0)
+  }
+}
+
+sum.occupied_p2 <- function(out,input, i, j){
+  res <- out + occupied_p2(input, i,j)
+  return(res)
+}
+
+seat_state_p2 <- function(iter){
+  if(state_current[iter[1], iter[2]] != "."){
+    
+    adjacent <- list(c(0,adjacent_array[iter[1],iter[2],1]),
+                 c(0,adjacent_array[iter[1],iter[2],6]),
+                 c(adjacent_array[iter[1],iter[2],3], adjacent_array[iter[1],iter[2],2]),
+                 c(adjacent_array[iter[1],iter[2],5], adjacent_array[iter[1],iter[2],4]),
+                 c(adjacent_array[iter[1],iter[2],8], adjacent_array[iter[1],iter[2],7]),
+                 c(adjacent_array[iter[1],iter[2],10], adjacent_array[iter[1],iter[2],9]),
+                 c(adjacent_array[iter[1],iter[2],11], 0),
+                 c(adjacent_array[iter[1],iter[2],12], 0))
+    count_occupied <- reduce(adjacent, sum.occupied_p2, i = iter[1], j = iter[2], .init = 0)
+    if (state_current[iter[1], iter[2]] == "L"){
+      if(count_occupied == 0){
+        return("#")
+      }else{
+        return("L")
+      }
+      }
+    if ((state_current[iter[1], iter[2]] == "#")){
+      if(count_occupied >= 5){
+        return("L")
+      }else{
+      return("#")
+    }
+  }
+    }else{
+    return(".")
+  }
+}
+
+ptm <- proc.time()
+while(!k){
+  state <- lapply(iter, seat_state_p2)
+  state_future <- do.call("rbind",state) %>% 
+    matrix(nrow = length(i_range), ncol = length(j_range), byrow = TRUE)
+  k <- identical(state_current, state_future)
+  state_current <- state_future
+}
+proc.time() - ptm
+
+solution_day11_p2 <- length(state_current[state_current == "#"])
+
+```
+
+# Day 12
+
+## Part 1
+
+```{r}
+day12 <- read_csv("data/day12.txt",col_names = FALSE)
+head(day12)
+
+day12 <- day12 %>% 
+  separate(X1, into = c("direction", "distance"), sep = "(?<=[A-Z])(?=[0-9])") %>% 
+  mutate(distance = as.numeric(distance))
+
+
+
+move_func <- function(position, direction, distance){
+  if(direction == "N"){
+    position[1] <- position[1] + distance
+    return(position)
+  }
+  if(direction == "S"){
+    position[1] <- position[1] - distance
+    return(position)
+  }
+  if(direction == "E"){
+    position[2] <- position[2] + distance
+    return(position)
+  }
+  if(direction == "W"){
+    position[2] <- position[2] - distance
+    return(position)
+  }
+}
+
+rotate_func <- function(face, direction, angle){
+  if(direction == "R"){
+    return(cardinals[which(cardinals == face)[1] + angle/90])
+  }
+  if(direction == "L"){
+    return(cardinals[which(cardinals == face)[2] - angle/90])
+  }
+}
+
+current_position <- c(0,0)
+dir_face <- "E"
+cardinals <- rep(c("N", "E", "S", "W"), 2)
+
+for(i in 1:dim(day12)[1]){
+   if(day12$direction[i] == "F"){
+      current_position <- move_func(current_position, dir_face, day12$distance[i])
+   }else{
+     if (day12$direction[i] %in% c("N", "S", "E", "W")){
+       current_position <- move_func(current_position, day12$direction[i], day12$distance[i])
+     }else{
+      dir_face <- rotate_func(dir_face, day12$direction[i], day12$distance[i])
+    }
+   }
+}
+
+solution_day12_p1 <- sum(abs(current_position))
+
+```
+
+## Part 2
+
+```{r}
+rotate_wp_func <- function(position, direction, angle){
+  x <- position[1]
+  y <- position[2]
+  if(angle == 180){
+    return(c(-x, -y))
+  }
+  if((direction == "R" & angle == 90)|(direction == "L" & angle == 270)){
+    return(c(-y, x))
+  }
+  if((direction == "L" & angle == 90)|(direction == "R" & angle == 270)){
+    return(c(y, -x))
+  }
+}
+
+current_position <- c(0,0)
+wp_position <- c(1, 10)
+
+
+for(i in 1:dim(day12)[1]){
+   if(day12$direction[i] == "F"){
+      current_position <- current_position + wp_position * day12$distance[i]
+   }else{
+     if (day12$direction[i] %in% c("N", "S", "E", "W")){
+       wp_position <- move_func(wp_position, day12$direction[i], day12$distance[i])
+     }else{
+      wp_position <- rotate_wp_func(wp_position, day12$direction[i], day12$distance[i])
+     }
+   }
+  #print(list(progress = i, position = current_position, wp = wp_position))
+}
+
+solution_day12_p2 <- sum(abs(current_position))
+```
+
