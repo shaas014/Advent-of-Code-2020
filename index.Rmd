@@ -19,6 +19,7 @@ Full descriptions of the problems and the data is available at https://adventofc
 
 ```{r}
 library(tidyverse)
+library(gmp) #for big numbers!
 ```
 
 
@@ -1089,5 +1090,94 @@ for(i in 1:dim(day12)[1]){
 }
 
 solution_day12_p2 <- sum(abs(current_position))
+```
+
+
+
+# Day 13
+
+## Part 1
+```{r}
+day13 <- read_file("data/day13.txt")
+
+day13 <- strsplit(day13, split = "\n|,") %>% unlist()
+
+value <- day13[1] %>% as.numeric()
+
+numbers <- day13[-1]
+numbers <- numbers[numbers != "x"] %>% as.numeric()
+
+multiples <- value/numbers 
+multiples <- lapply(multiples, ceiling) %>% unlist()
+differentials <- multiples * numbers - value
+solution_day13_p1 <- numbers[differentials == min(differentials)] * min(differentials)
+```
+
+## Part 2
+
+```{r}
+day13 <- day13[-1] %>%
+  tibble() %>%
+  rowid_to_column() %>%
+  rename(bus = ".") %>%
+  filter(bus != "x") %>%
+  transmute(bus = as.numeric(bus),
+         remainder = 1-rowid)
+
+#day13 <- day13[order(-day13$bus),]
+
+day13 <- c(17,"x",13,19) %>% 
+  tibble() %>% 
+  rowid_to_column() %>% 
+  rename(bus = ".") %>%
+  filter(bus != "x") %>%
+  transmute(bus = as.numeric(bus),
+         remainder = 1-rowid)
+
+day13 <- c(67,7,59,61) %>% 
+  tibble() %>% 
+  rowid_to_column() %>% 
+  rename(bus = ".") %>%
+  filter(bus != "x") %>%
+  transmute(bus = as.numeric(bus),
+         remainder = 1 - rowid)
+
+
+
+gcd_func <- function(r1, r2){
+  s1 <- 1
+  s2 <- 0
+  t1 <- 0
+  t2 <- 1
+  r <- 1
+  while(r > 0){
+    q <- r1 %/% r2
+    r <- r1 %% r2
+    s <- s1 - q * s2
+    t <- t1 - q * t2
+    if(r > 0){
+      r1 <- r2
+      r2 <- r
+      s1 <- s2
+      s2 <- s
+      t1 <- t2
+      t2 <- t
+    }
+  }
+  return(list(gcd = r2, coef1 = s2, coef2 = t2))
+}
+  
+iter <- 2:dim(day13)[1]
+a <- as.bigz(day13$bus[1])
+remainder <- as.bigz(day13$remainder[1])
+
+for(i in iter){
+  b <- as.bigz(day13$bus[i])
+  gcds <- gcd_func(a,b)
+  x <- as.bigz(day13$remainder[i]) * a * as.bigz(gcds$coef1) + remainder * b * as.bigz(gcds$coef2)
+  remainder <- x %% (a*b)
+  a <- a * b
+}
+
 ```
 

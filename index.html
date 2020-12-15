@@ -1612,6 +1612,12 @@ div.tocify {
 <pre><code>## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
 ## x dplyr::filter() masks stats::filter()
 ## x dplyr::lag()    masks stats::lag()</code></pre>
+<pre class="r"><code>library(gmp) #for big numbers!</code></pre>
+<pre><code>## 
+## Attaching package: &#39;gmp&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     %*%, apply, crossprod, matrix, tcrossprod</code></pre>
 <div id="day-1" class="section level1">
 <h1>Day 1</h1>
 <p><a href="https://adventofcode.com/2020/day/1" class="uri">https://adventofcode.com/2020/day/1</a></p>
@@ -2684,6 +2690,90 @@ for(i in 1:dim(day12)[1]){
 }
 
 solution_day12_p2 &lt;- sum(abs(current_position))</code></pre>
+</div>
+</div>
+<div id="day-13" class="section level1">
+<h1>Day 13</h1>
+<div id="part-1-12" class="section level2">
+<h2>Part 1</h2>
+<pre class="r"><code>day13 &lt;- read_file(&quot;data/day13.txt&quot;)
+
+day13 &lt;- strsplit(day13, split = &quot;\n|,&quot;) %&gt;% unlist()
+
+value &lt;- day13[1] %&gt;% as.numeric()
+
+numbers &lt;- day13[-1]
+numbers &lt;- numbers[numbers != &quot;x&quot;] %&gt;% as.numeric()
+
+multiples &lt;- value/numbers 
+multiples &lt;- lapply(multiples, ceiling) %&gt;% unlist()
+differentials &lt;- multiples * numbers - value
+solution_day13_p1 &lt;- numbers[differentials == min(differentials)] * min(differentials)</code></pre>
+</div>
+<div id="part-2-12" class="section level2">
+<h2>Part 2</h2>
+<pre class="r"><code>day13 &lt;- day13[-1] %&gt;%
+  tibble() %&gt;%
+  rowid_to_column() %&gt;%
+  rename(bus = &quot;.&quot;) %&gt;%
+  filter(bus != &quot;x&quot;) %&gt;%
+  transmute(bus = as.numeric(bus),
+         remainder = 1-rowid)
+
+#day13 &lt;- day13[order(-day13$bus),]
+
+day13 &lt;- c(17,&quot;x&quot;,13,19) %&gt;% 
+  tibble() %&gt;% 
+  rowid_to_column() %&gt;% 
+  rename(bus = &quot;.&quot;) %&gt;%
+  filter(bus != &quot;x&quot;) %&gt;%
+  transmute(bus = as.numeric(bus),
+         remainder = 1-rowid)
+
+day13 &lt;- c(67,7,59,61) %&gt;% 
+  tibble() %&gt;% 
+  rowid_to_column() %&gt;% 
+  rename(bus = &quot;.&quot;) %&gt;%
+  filter(bus != &quot;x&quot;) %&gt;%
+  transmute(bus = as.numeric(bus),
+         remainder = 1 - rowid)
+
+
+
+gcd_func &lt;- function(r1, r2){
+  s1 &lt;- 1
+  s2 &lt;- 0
+  t1 &lt;- 0
+  t2 &lt;- 1
+  r &lt;- 1
+  while(r &gt; 0){
+    q &lt;- r1 %/% r2
+    r &lt;- r1 %% r2
+    s &lt;- s1 - q * s2
+    t &lt;- t1 - q * t2
+    if(r &gt; 0){
+      r1 &lt;- r2
+      r2 &lt;- r
+      s1 &lt;- s2
+      s2 &lt;- s
+      t1 &lt;- t2
+      t2 &lt;- t
+    }
+  }
+  return(list(gcd = r2, coef1 = s2, coef2 = t2))
+}
+  
+iter &lt;- 2:dim(day13)[1]
+a &lt;- as.bigz(day13$bus[1])
+remainder &lt;- as.bigz(day13$remainder[1])
+
+for(i in iter){
+  b &lt;- as.bigz(day13$bus[i])
+  gcds &lt;- gcd_func(a,b)
+  x &lt;- as.bigz(day13$remainder[i]) * a * as.bigz(gcds$coef1) + remainder * b * as.bigz(gcds$coef2)
+  remainder &lt;- x %% (a*b)
+  a &lt;- a * b
+}</code></pre>
 </div>
 </div>
 
